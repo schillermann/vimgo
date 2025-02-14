@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"os"
 
@@ -13,25 +14,34 @@ var reader = bufio.NewReader(os.Stdin)
 
 /*** output ***/
 func editorRefreshScreen() {
-	// clear screen
-	fmt.Fprint(os.Stdout, "\x1b[2J")
-	fmt.Fprint(os.Stdout, "\x1b[H")
+	var editorBuffer = bytes.Buffer{}
 
-	editorDrawRows()
+	// hide cursor while refresh screen to prevent him from jumping
+	fmt.Fprint(&editorBuffer, "\x1b[?25l")
+	// clear screen
+	fmt.Fprint(&editorBuffer, "\x1b[2J")
+	// move cursor to top left
+	fmt.Fprint(&editorBuffer, "\x1b[H")
+
+	editorDrawRows(&editorBuffer)
 
 	// reposition cursor
-	fmt.Fprint(os.Stdout, "\x1b[H")
+	fmt.Fprint(&editorBuffer, "\x1b[H")
+	// show cursor
+	fmt.Fprint(&editorBuffer, "\x1b[?25h")
+
+	os.Stdout.Write(editorBuffer.Bytes())
 }
 
-func editorDrawRows() {
+func editorDrawRows(editorBuffer *bytes.Buffer) {
 	var _, rows, err = terminalWindow.NumberOfColumnsAndRows()
 	if err != nil {
 		exit(err)
 	}
 	for j := 0; j < rows; j++ {
-		fmt.Fprint(os.Stdout, "~")
+		fmt.Fprint(editorBuffer, "~")
 		if j < rows-1 {
-			fmt.Fprint(os.Stdout, "\r\n")
+			fmt.Fprint(editorBuffer, "\r\n")
 		}
 	}
 }
