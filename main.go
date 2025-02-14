@@ -9,6 +9,8 @@ import (
 	"github.com/schillermann/vimgo/terminal"
 )
 
+const Version = "v0.0.1"
+
 var terminalWindow = terminal.TerminalWindow{}
 var reader = bufio.NewReader(os.Stdin)
 
@@ -32,12 +34,37 @@ func editorRefreshScreen() {
 }
 
 func editorDrawRows(editorBuffer *bytes.Buffer) {
-	var _, rows, err = terminalWindow.NumberOfColumnsAndRows()
+	var columns, rows, err = terminalWindow.NumberOfColumnsAndRows()
 	if err != nil {
 		exit(err)
 	}
 	for j := 0; j < rows; j++ {
-		fmt.Fprint(editorBuffer, "~")
+		if j == rows/3 {
+			var welcomeMsg = fmt.Sprintf("VimGo Editor %s", Version)
+			var welcomeLen = len(welcomeMsg)
+
+			if welcomeLen > columns {
+				welcomeMsg = welcomeMsg[:columns]
+				welcomeLen = columns
+			}
+			var padding = (columns - welcomeLen)/2
+
+			// if there is at least 1 padding required, use the Tilde to start line
+			if padding > 0{
+				fmt.Fprint(editorBuffer, "~")
+				padding--
+			}
+
+			// add appropriate number of spaces
+			for i := 0; i < padding; i++{
+				fmt.Fprint(editorBuffer, " ")
+			}
+
+			fmt.Fprint(editorBuffer, welcomeMsg)
+
+		} else {
+			fmt.Fprint(editorBuffer, "~")
+		}
 		// clear to end of line
 		fmt.Fprint(editorBuffer, "\x1b[K")
 
