@@ -18,8 +18,6 @@ func editorRefreshScreen() {
 
 	// hide cursor while refresh screen to prevent him from jumping
 	fmt.Fprint(&editorBuffer, "\x1b[?25l")
-	// clear screen
-	fmt.Fprint(&editorBuffer, "\x1b[2J")
 	// move cursor to top left
 	fmt.Fprint(&editorBuffer, "\x1b[H")
 
@@ -40,6 +38,9 @@ func editorDrawRows(editorBuffer *bytes.Buffer) {
 	}
 	for j := 0; j < rows; j++ {
 		fmt.Fprint(editorBuffer, "~")
+		// clear to end of line
+		fmt.Fprint(editorBuffer, "\x1b[K")
+
 		if j < rows-1 {
 			fmt.Fprint(editorBuffer, "\r\n")
 		}
