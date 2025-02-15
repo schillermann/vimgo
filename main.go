@@ -49,16 +49,16 @@ func editorDrawRows(editorBuffer *bytes.Buffer) {
 				welcomeMsg = welcomeMsg[:columns]
 				welcomeLen = columns
 			}
-			var padding = (columns - welcomeLen)/2
+			var padding = (columns - welcomeLen) / 2
 
 			// if there is at least 1 padding required, use the Tilde to start line
-			if padding > 0{
+			if padding > 0 {
 				fmt.Fprint(editorBuffer, "~")
 				padding--
 			}
 
 			// add appropriate number of spaces
-			for i := 0; i < padding; i++{
+			for i := 0; i < padding; i++ {
 				fmt.Fprint(editorBuffer, " ")
 			}
 
@@ -122,6 +122,14 @@ func main() {
 		switch keyPress {
 		case 'q':
 			exit(nil)
+		case 'h':
+			editor.cursorX--
+		case 'l':
+			editor.cursorX++
+		case 'j':
+			editor.cursorY++
+		case 'k':
+			editor.cursorY--
 		default:
 			fmt.Println(keyPress)
 		}
