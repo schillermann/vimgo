@@ -11,6 +11,7 @@ import (
 
 const Version = "v0.0.1"
 
+var editor = Editor{1, 1}
 var terminalWindow = terminal.TerminalWindow{}
 var reader = bufio.NewReader(os.Stdin)
 
@@ -27,6 +28,7 @@ func editorRefreshScreen() {
 
 	// reposition cursor
 	fmt.Fprint(&editorBuffer, "\x1b[H")
+	fmt.Fprintf(&editorBuffer, "\x1b[%d;%dH", editor.cursorY, editor.cursorX)
 	// show cursor
 	fmt.Fprint(&editorBuffer, "\x1b[?25h")
 
