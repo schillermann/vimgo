@@ -68,14 +68,26 @@ func main() {
 		}
 	}
 
-	// key press
-	keyPress, err := KeyPress()
-	if err != nil {
-		SafeExit(err)
-	}
+	consoleCsi.MoveCursorLeftCorner()
 
-	switch keyPress {
-	case 'q':
-		SafeExit(nil)
+	for {
+		// key press
+		keyPress, err := KeyPress()
+		if err != nil {
+			SafeExit(err)
+		}
+
+		switch keyPress {
+		case 'h':
+			consoleCsi.MoveCursorLeft(1)
+		case 'j':
+			consoleCsi.MoveCursorDown(1)
+		case 'k':
+			consoleCsi.MoveCursorUp(1)
+		case 'l':
+			consoleCsi.MoveCursorRight(1)
+		case 'q':
+			SafeExit(nil)
+		}
 	}
 }
