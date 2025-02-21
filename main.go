@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"os"
 
@@ -35,14 +36,25 @@ func SafeExit(withErr error) {
 }
 
 func main() {
+	flag.Parse()
+
 	if err := consoleWindow.EnableRawMode(); err != nil {
 		SafeExit(nil)
 	}
 
-	// test output
+	// file output
+	file := File{Filename: flag.Arg(0)}
+	if err := file.Read(); err != nil {
+		fmt.Fprint(os.Stderr, err)
+	}
 	consoleCsi.ClearScreen()
-	consoleCsi.PrintRune(0,0,'q')
+	for rowIndex, row := range file.Rows() {
+		for columnIndex, char := range row {
+			consoleCsi.PrintRune(rowIndex+1, columnIndex+1, char)
+		}
+	}
 
+	// key press
 	keyPress, err := KeyPress()
 	if err != nil {
 		SafeExit(err)
