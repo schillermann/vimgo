@@ -1,8 +1,14 @@
 # Personal Terminal Text Editor TUI Like Vim
 
-Start program
+Open File
 ```sh
-go run .
+go run . FILENAME
 ```
 
-You can exit the program by pressing the `Q` key.
+Keymap
+
+- `H` - Cursor left
+- `L` - Cursor right
+- `K` - Cursor up
+- `J` - Cursor down
+- `Q` - Exit
