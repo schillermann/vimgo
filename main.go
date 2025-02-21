@@ -48,8 +48,22 @@ func main() {
 		fmt.Fprint(os.Stderr, err)
 	}
 	consoleCsi.ClearScreen()
-	for rowIndex, row := range file.Rows() {
-		for columnIndex, char := range row {
+
+	rows, columns, err := consoleWindow.Size()
+	if err != nil {
+		SafeExit(err)
+	}
+
+	for rowIndex := 0; rowIndex < rows; rowIndex++ {
+		if rowIndex >= len(file.Rows()) {
+			consoleCsi.PrintRune(rowIndex+1, 1, '~')
+			continue
+		}
+
+		for columnIndex, char := range file.Rows()[rowIndex] {
+			if columnIndex >= columns {
+				break
+			}
 			consoleCsi.PrintRune(rowIndex+1, columnIndex+1, char)
 		}
 	}

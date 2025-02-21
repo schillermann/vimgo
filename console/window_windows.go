@@ -69,7 +69,7 @@ func (self *Window) EnableRawMode() error {
 	return nil
 }
 
-func (self *Window) Size() (columns int, rows int, err error) {
+func (self *Window) Size() (rows int, columns int, err error) {
 	info := windows.ConsoleScreenBufferInfo{}
 
 	if err := windows.GetConsoleScreenBufferInfo(windows.Stdout, &info); err != nil {

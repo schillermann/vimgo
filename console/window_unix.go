@@ -52,11 +52,11 @@ func (self *Window) EnableRawMode() error {
 	return nil
 }
 
-func (self *Window) Size() (columns int, rows int, err error) {
+func (self *Window) Size() (rows int, columns int, err error) {
 	winsize, err := unix.IoctlGetWinsize(unix.Stdout, unix.TIOCGWINSZ)
 	if err != nil {
 		return 0, 0, fmt.Errorf("error fetching window size: %w", err)
 	}
 
-	return int(winsize.Col), int(winsize.Row), nil
+	return int(winsize.Row), int(winsize.Col), nil
 }
