@@ -9,6 +9,7 @@ import (
 )
 
 var consoleWindow = console.Window{}
+var consoleCsi = console.Csi{Writer: os.Stdout}
 
 func KeyPress() (rune, error) {
 	input := bufio.NewReader(os.Stdin)
@@ -20,8 +21,7 @@ func KeyPress() (rune, error) {
 }
 
 func SafeExit(withErr error) {
-	fmt.Fprint(os.Stdout, console.AnsiClearScreen)
-	fmt.Fprint(os.Stdout, console.AnsiCursorMoveTopLeft)
+	consoleCsi.ClearScreen()
 
 	if err := consoleWindow.DisableRawMode(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: disabling raw mode: %s\r\n", err)
@@ -40,9 +40,8 @@ func main() {
 	}
 
 	// test output
-	fmt.Fprint(os.Stdout, console.AnsiClearScreen)
-	fmt.Fprintf(os.Stdout, console.AnsiCustorMovePrintRune, 0, 0, 'q')
-	fmt.Fprint(os.Stdout, console.AnsiCursorMoveTopLeft)
+	consoleCsi.ClearScreen()
+	consoleCsi.PrintRune(0,0,'q')
 
 	keyPress, err := KeyPress()
 	if err != nil {
