@@ -10,7 +10,6 @@ import (
 )
 
 var consoleWindow = console.Window{}
-var consoleCsi = console.Csi{Writer: os.Stdout}
 
 func KeyPress() (rune, error) {
 	input := bufio.NewReader(os.Stdin)
@@ -42,33 +41,13 @@ func main() {
 		SafeExit(nil)
 	}
 
-	// file output
-	file := File{Filename: flag.Arg(0)}
-	if err := file.Read(); err != nil {
-		fmt.Fprint(os.Stderr, err)
-	}
-	consoleCsi.ClearScreen()
-
-	rows, columns, err := consoleWindow.Size()
-	if err != nil {
+	editor := NewEditor(File{Filename: flag.Arg(0)})
+	if err := editor.LoadFile(); err != nil {
 		SafeExit(err)
 	}
-
-	for rowIndex := 0; rowIndex < rows; rowIndex++ {
-		if rowIndex >= len(file.Rows()) {
-			consoleCsi.PrintRune(rowIndex+1, 1, '~')
-			continue
-		}
-
-		for columnIndex, char := range file.Rows()[rowIndex] {
-			if columnIndex >= columns {
-				break
-			}
-			consoleCsi.PrintRune(rowIndex+1, columnIndex+1, char)
-		}
+	if err := editor.RenderScreen(); err != nil {
+		SafeExit(err)
 	}
-
-	consoleCsi.MoveCursorLeftCorner()
 
 	for {
 		// key press
@@ -79,13 +58,13 @@ func main() {
 
 		switch keyPress {
 		case 'h':
-			consoleCsi.MoveCursorLeft(1)
+			editor.MoveCursorLeft(1)
 		case 'j':
-			consoleCsi.MoveCursorDown(1)
+			editor.MoveCursorDown(1)
 		case 'k':
-			consoleCsi.MoveCursorUp(1)
+			editor.MoveCursorUp(1)
 		case 'l':
-			consoleCsi.MoveCursorRight(1)
+			editor.MoveCursorRight(1)
 		case 'q':
 			SafeExit(nil)
 		}
