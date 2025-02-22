@@ -21,7 +21,7 @@ func KeyPress() (rune, error) {
 }
 
 func SafeExit(withErr error) {
-	consoleCsi.ClearScreen()
+	consoleCsi.ScreenClear()
 
 	if err := consoleWindow.DisableRawMode(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: disabling raw mode: %s\r\n", err)
@@ -35,17 +35,17 @@ func SafeExit(withErr error) {
 }
 
 func main() {
-	flag.Parse()
-
 	if err := consoleWindow.EnableRawMode(); err != nil {
 		SafeExit(nil)
 	}
 
-	editor := NewEditor(File{Filename: flag.Arg(0)})
-	if err := editor.LoadFile(); err != nil {
+	flag.Parse()
+	editor := NewEditor(NewFile(flag.Arg(0)))
+
+	if err := editor.FileLoad(); err != nil {
 		SafeExit(err)
 	}
-	if err := editor.RenderScreen(); err != nil {
+	if err := editor.ScreenRender(); err != nil {
 		SafeExit(err)
 	}
 
@@ -58,13 +58,13 @@ func main() {
 
 		switch keyPress {
 		case 'h':
-			editor.MoveCursorLeft(1)
+			editor.CursorMoveLeft(1)
 		case 'j':
-			editor.MoveCursorDown(1)
+			editor.CursorMoveDown(1)
 		case 'k':
-			editor.MoveCursorUp(1)
+			editor.CursorMoveUp(1)
 		case 'l':
-			editor.MoveCursorRight(1)
+			editor.CursorMoveRight(1)
 		case 'q':
 			SafeExit(nil)
 		}
