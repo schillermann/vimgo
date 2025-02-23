@@ -39,6 +39,8 @@ func modeEdit(editor *Editor, keyPress rune) {
 	switch keyPress {
 	case 27: // ESC key
 		editor.ModeToView()
+	default:
+		editor.RuneInsert(keyPress)
 	}
 }
 

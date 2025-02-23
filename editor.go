@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/schillermann/vimgo/console"
@@ -80,6 +81,19 @@ func (self *Editor) IsModeView() bool {
 		return true
 	}
 	return false
+}
+
+func (self *Editor) RowRender(rowNumber int) {
+	for columnIndex, char := range self.file.Rows()[rowNumber-1] {
+		self.consoleCsi.RunePrint(rowNumber, columnIndex+1, char)
+	}
+}
+
+func (self *Editor) RuneInsert(char rune) {
+	self.file.Rows()[self.cursorRow-1] = slices.Insert(self.file.Rows()[self.cursorRow-1], self.cursorColumn-1, char)
+	self.RowRender(self.cursorRow)
+	self.cursorColumn++
+	self.consoleCsi.CursorMoveTo(self.cursorRow, self.cursorColumn)
 }
 
 func (self *Editor) ScreenRender() error {
