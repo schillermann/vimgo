@@ -34,6 +34,14 @@ func (self *Editor) FileLoad() error {
 	return nil
 }
 
+func (self *Editor) CursorCheckColumnEnd() {
+	columnLength := len(self.file.Rows()[self.cursorRow-1])
+	if self.cursorColumn > columnLength {
+		self.cursorColumn = columnLength
+		self.consoleCsi.CursorMoveTo(self.cursorRow, self.cursorColumn)
+	}
+}
+
 func (self *Editor) CursorMoveLeft(jump int) {
 	if self.cursorColumn < 2 {
 		return
@@ -49,6 +57,7 @@ func (self *Editor) CursorMoveDown(jump int) {
 	}
 	self.consoleCsi.CursorMoveDown(1)
 	self.cursorRow++
+	self.CursorCheckColumnEnd()
 	self.StatuslineRender()
 }
 
@@ -58,6 +67,7 @@ func (self *Editor) CursorMoveUp(jump int) {
 	}
 	self.consoleCsi.CursorMoveUp(1)
 	self.cursorRow--
+	self.CursorCheckColumnEnd()
 	self.StatuslineRender()
 }
 
@@ -94,6 +104,7 @@ func (self *Editor) RuneInsert(char rune) {
 	self.RowRender(self.cursorRow)
 	self.cursorColumn++
 	self.consoleCsi.CursorMoveTo(self.cursorRow, self.cursorColumn)
+	self.StatuslineRender()
 }
 
 func (self *Editor) ScreenRender() error {
