@@ -8,19 +8,19 @@ import (
 )
 
 type File struct {
-	filename string
+	name     string
 	modified bool
 	rows     [][]rune
 }
 
-func NewFile(filename string) *File {
+func NewFile(name string) *File {
 	return &File{
-		filename: filename,
+		name: name,
 	}
 }
 
-func (self *File) Filename() string {
-	return self.filename
+func (self *File) Name() string {
+	return self.name
 }
 
 func (self *File) Insert(row int, column int, char rune) {
@@ -33,9 +33,9 @@ func (self *File) Load() error {
 		return nil
 	}
 
-	file, err := os.Open(self.filename)
+	file, err := os.Open(self.name)
 	if err != nil {
-		return fmt.Errorf("error opening file %s: %w", self.filename, err)
+		return fmt.Errorf("error opening file %s: %w", self.name, err)
 	}
 
 	rows := [][]rune{}
@@ -45,7 +45,7 @@ func (self *File) Load() error {
 	}
 	file.Close()
 	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("error reading file %s: %w", self.filename, err)
+		return fmt.Errorf("error reading file %s: %w", self.name, err)
 	}
 	self.rows = rows
 
@@ -57,7 +57,7 @@ func (self *File) Modified() bool {
 }
 
 func (self *File) NoFile() bool {
-	if self.filename == "" {
+	if self.name == "" {
 		return true
 	}
 	return false
@@ -72,22 +72,22 @@ func (self *File) Rows() [][]rune {
 }
 
 func (self *File) Save() error {
-	file, err := os.Create(self.filename)
+	file, err := os.Create(self.name)
 	if err != nil {
 		file.Close()
-		return fmt.Errorf("error creating file: %s: %w", self.filename, err)
+		return fmt.Errorf("error creating file: %s: %w", self.name, err)
 	}
 
 	for _, row := range self.rows {
 		_, err = file.WriteString(string(row) + "\n")
 		if err != nil {
 			file.Close()
-			return fmt.Errorf("error writing to file %s: %w", self.filename, err)
+			return fmt.Errorf("error writing to file %s: %w", self.name, err)
 		}
 	}
 
 	if err = file.Close(); err != nil {
-		return fmt.Errorf("error closing written file: %s: %w", self.filename, err)
+		return fmt.Errorf("error closing written file: %s: %w", self.name, err)
 	}
 	self.modified = false
 	return nil

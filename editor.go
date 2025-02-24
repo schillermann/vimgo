@@ -30,7 +30,7 @@ func (self *Editor) FileLoad() error {
 		return err
 	}
 	self.consoleCommands.CursorMoveTopLeft()
-	self.TitleSet(self.file.Filename())
+	self.TitleSet(self.file.Name())
 	return nil
 }
 
@@ -153,26 +153,48 @@ func (self *Editor) ScreenRender() error {
 	return nil
 }
 
+func (self *Editor) Statusline(middleColumns int, columnsCut int) string {
+	fileModified := ' '
+	if self.file.Modified() {
+		fileModified = '*'
+	}
+	filename := self.file.Name()
+	if columnsCut > 0 {
+		filename = ".." + filename[columnsCut+2:]
+	}
+
+	return fmt.Sprintf(
+		" %[1]s: %[2]s%[3]c%[4]sRow %[5]d/%[6]d, Col %[7]d ",
+		strings.ToUpper(self.mode),
+		filename,
+		fileModified,
+		strings.Repeat(" ", middleColumns),
+		self.cursorRow,
+		self.file.NumberOfRows(),
+		self.cursorColumn,
+	)
+}
+
 func (self *Editor) StatuslineRender() error {
-	rows, columns, err := consoleWindow.Size()
+	consoleWindowRows, consoleWindowColumns, err := consoleWindow.Size()
 	if err != nil {
 		return err
 	}
 
 	self.consoleCommands.ColorInverse()
 
-	fileModified := ' '
-	if self.file.Modified() {
-		fileModified = '*'
+	statuslineMiddleColumns := 1
+	statusline := self.Statusline(statuslineMiddleColumns, 0)
+	statuslineColumns := len(statusline)
+	if statuslineColumns < consoleWindowColumns {
+		statusline = self.Statusline(consoleWindowColumns+statuslineMiddleColumns-statuslineColumns, 0)
+	} else if statuslineColumns > consoleWindowColumns {
+		statusline = self.Statusline(statuslineMiddleColumns, statuslineColumns-consoleWindowColumns)
 	}
-	leftStatusline := fmt.Sprintf(" %s: %c%s", strings.ToUpper(self.mode), fileModified, self.file.Filename())
-	rightStatusline := fmt.Sprintf("Row %d/%d, Col %d ", self.cursorRow, self.file.NumberOfRows(), self.cursorColumn)
-	middleStatuslineLength := columns - len(leftStatusline) - len(rightStatusline)
-	statusline := leftStatusline + strings.Repeat(" ", middleStatuslineLength) + rightStatusline
 
 	self.consoleCommands.CursorHide()
 	for index, char := range statusline {
-		self.consoleCommands.RunePrint(rows, index+1, char)
+		self.consoleCommands.RunePrint(consoleWindowRows, index+1, char)
 	}
 	self.consoleCommands.CursorShow()
 	self.consoleCommands.Reset()
