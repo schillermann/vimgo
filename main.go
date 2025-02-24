@@ -10,7 +10,7 @@ import (
 )
 
 var consoleWindow = console.Window{}
-var consoleCsi = console.NewCsi()
+var consoleCsi = console.NewCommands()
 
 func KeyPress() (rune, error) {
 	input := bufio.NewReader(os.Stdin)
@@ -56,6 +56,10 @@ func modeView(editor *Editor, keyPress rune) {
 		editor.CursorMoveRight(1)
 	case 'e':
 		editor.ModeToEdit()
+	case 's':
+		if err := editor.FileSave(); err != nil {
+			SafeExit(err)
+		}
 	case 'q':
 		SafeExit(nil)
 	}
