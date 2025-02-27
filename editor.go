@@ -41,9 +41,9 @@ func (self *Editor) FileSave() error {
 }
 
 func (self *Editor) CursorCheckColumnEnd() {
-	columnLength := len(self.file.Rows()[self.cursorRow-1])
-	if self.cursorColumn > columnLength {
-		self.cursorColumn = columnLength
+	columnEnd := len(self.file.Rows()[self.cursorRow-1]) + 1
+	if self.cursorColumn > columnEnd {
+		self.cursorColumn = columnEnd
 		self.consoleCommands.CursorMoveTo(self.cursorRow, self.cursorColumn)
 	}
 }
@@ -78,7 +78,7 @@ func (self *Editor) CursorMoveUp(jump int) {
 }
 
 func (self *Editor) CursorMoveRight(jump int) {
-	if self.cursorColumn >= len(self.file.Rows()[self.cursorRow-1]) {
+	if self.cursorColumn > len(self.file.Rows()[self.cursorRow-1]) {
 		return
 	}
 	self.consoleCommands.CursorMoveRight(1)
@@ -129,7 +129,8 @@ func (self *Editor) RowRender(row int) error {
 }
 
 func (self *Editor) RowRenderSpaces(row int, columnStart int, columnEnd int) {
-	for column := columnStart; column <= columnEnd; column++ {
+	self.consoleCommands.RunePrint(row, columnStart, '↲')
+	for column := columnStart + 1; column <= columnEnd; column++ {
 		self.consoleCommands.RunePrint(row, column, ' ')
 	}
 }
