@@ -109,18 +109,53 @@ func (self *Editor) ModeToView() {
 	self.StatuslineRender()
 }
 
-func (self *Editor) RowRender(rowNumber int) {
-	for columnIndex, char := range self.file.Rows()[rowNumber-1] {
-		self.consoleCommands.RunePrint(rowNumber, columnIndex+1, char)
+func (self *Editor) RowRender(row int) error {
+	_, consoleWindowColumns, err := consoleWindow.Size()
+	if err != nil {
+		return err
+	}
+
+	self.consoleCommands.CursorHide()
+	for columnIndex, char := range self.file.Rows()[row-1] {
+		if columnIndex >= consoleWindowColumns {
+			self.consoleCommands.CursorShow()
+			return nil
+		}
+		self.consoleCommands.RunePrint(row, columnIndex+1, char)
+	}
+	self.RowRenderSpaces(row, len(self.file.Rows()[row-1])+1, consoleWindowColumns)
+	self.consoleCommands.CursorShow()
+	return nil
+}
+
+func (self *Editor) RowRenderSpaces(row int, columnStart int, columnEnd int) {
+	for column := columnStart; column <= columnEnd; column++ {
+		self.consoleCommands.RunePrint(row, column, ' ')
 	}
 }
 
-func (self *Editor) RuneInsert(char rune) {
-	self.file.Insert(self.cursorRow, self.cursorColumn, char)
-	self.RowRender(self.cursorRow)
+func (self *Editor) RuneDelete() error {
+	self.file.RuneDelete(self.cursorRow, self.cursorColumn)
+	self.cursorColumn--
+	if err := self.RowRender(self.cursorRow); err != nil {
+		return err
+	}
+	if err := self.StatuslineRender(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (self *Editor) RuneInsert(char rune) error {
+	self.file.RuneInsert(self.cursorRow, self.cursorColumn, char)
 	self.cursorColumn++
-	self.consoleCommands.CursorMoveTo(self.cursorRow, self.cursorColumn)
-	self.StatuslineRender()
+	if err := self.RowRender(self.cursorRow); err != nil {
+		return err
+	}
+	if err := self.StatuslineRender(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (self *Editor) ScreenRender() error {
@@ -130,23 +165,18 @@ func (self *Editor) ScreenRender() error {
 		return err
 	}
 
-	rows, columns, err := consoleWindow.Size()
+	consoleWindowRows, _, err := consoleWindow.Size()
 	if err != nil {
 		return err
 	}
 
-	for rowIndex := 0; rowIndex < rows-1; rowIndex++ {
-		if rowIndex >= len(self.file.Rows()) {
-			self.consoleCommands.RunePrint(rowIndex+1, 1, '~')
+	for row := 1; row < consoleWindowRows; row++ {
+		if row > len(self.file.Rows()) {
+			self.consoleCommands.RunePrint(row, 1, '~')
 			continue
 		}
 
-		for columnIndex, char := range self.file.Rows()[rowIndex] {
-			if columnIndex >= columns {
-				break
-			}
-			self.consoleCommands.RunePrint(rowIndex+1, columnIndex+1, char)
-		}
+		self.RowRender(row)
 	}
 	self.consoleCommands.CursorMoveTopLeft()
 

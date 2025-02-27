@@ -35,13 +35,21 @@ func SafeExit(withErr error) {
 	os.Exit(0)
 }
 
-func modeEdit(editor *Editor, keyPress rune) {
+func modeEdit(editor *Editor, keyPress rune) error {
 	switch keyPress {
 	case 27: // ESC key
 		editor.ModeToView()
+	case 127: // Backspace
+		if err := editor.RuneDelete(); err != nil {
+			return err
+		}
 	default:
-		editor.RuneInsert(keyPress)
+		if err := editor.RuneInsert(keyPress); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 func modeView(editor *Editor, keyPress rune) {
@@ -90,7 +98,9 @@ func main() {
 		if editor.IsModeView() {
 			modeView(editor, keyPress)
 		} else if editor.IsModeEdit() {
-			modeEdit(editor, keyPress)
+			if err := modeEdit(editor, keyPress); err != nil {
+				SafeExit(err)
+			}
 		}
 	}
 }

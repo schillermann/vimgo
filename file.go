@@ -19,15 +19,6 @@ func NewFile(name string) *File {
 	}
 }
 
-func (self *File) Name() string {
-	return self.name
-}
-
-func (self *File) Insert(row int, column int, char rune) {
-	self.rows[row-1] = slices.Insert(self.rows[row-1], column-1, char)
-	self.modified = true
-}
-
 func (self *File) Load() error {
 	if self.NoFile() {
 		return nil
@@ -56,6 +47,10 @@ func (self *File) Modified() bool {
 	return self.modified
 }
 
+func (self *File) Name() string {
+	return self.name
+}
+
 func (self *File) NoFile() bool {
 	if self.name == "" {
 		return true
@@ -69,6 +64,16 @@ func (self *File) NumberOfRows() int {
 
 func (self *File) Rows() [][]rune {
 	return self.rows
+}
+
+func (self *File) RuneDelete(row int, column int) {
+	self.rows[row-1] = slices.Delete(self.rows[row-1], column-2, column-1)
+	self.modified = true
+}
+
+func (self *File) RuneInsert(row int, column int, char rune) {
+	self.rows[row-1] = slices.Insert(self.rows[row-1], column-1, char)
+	self.modified = true
 }
 
 func (self *File) Save() error {
