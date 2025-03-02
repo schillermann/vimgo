@@ -58,17 +58,24 @@ func (self *Commands) CursorShow() {
 	fmt.Fprint(self.writer, csi+"?25h")
 }
 
+func (self *Commands) CursorStyleLine() {
+	fmt.Fprint(self.writer, csi+"6 q")
+}
+
+func (self *Commands) CursorStyleReset() {
+	fmt.Fprint(self.writer, csi+"0 q")
+}
+
 func (self *Commands) Reset() {
+	fmt.Fprint(self.writer, escape+"c")
+}
+
+func (self *Commands) ResetFormatting() {
 	fmt.Fprint(self.writer, csi+"0m")
 }
 
 func (self *Commands) RunePrint(row int, column int, char rune) {
 	fmt.Fprintf(self.writer, csi+"%d;%dH%c", row, column, char)
-}
-
-func (self *Commands) ScreenClear() {
-	self.CursorMoveTopLeft()
-	fmt.Fprint(self.writer, csi+"0J")
 }
 
 func (self *Commands) TitleSet(title string) {

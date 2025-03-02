@@ -10,7 +10,7 @@ import (
 )
 
 var consoleWindow = console.Window{}
-var consoleCsi = console.NewCommands()
+var consoleCommands = console.NewCommands()
 
 func KeyPress() (rune, error) {
 	input := bufio.NewReader(os.Stdin)
@@ -22,7 +22,7 @@ func KeyPress() (rune, error) {
 }
 
 func SafeExit(withErr error) {
-	consoleCsi.ScreenClear()
+	consoleCommands.Reset()
 
 	if err := consoleWindow.DisableRawMode(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: disabling raw mode: %s\r\n", err)
@@ -40,13 +40,9 @@ func modeEdit(editor *Editor, keyPress rune) error {
 	case 27: // ESC key
 		editor.ModeToView()
 	case 127: // Backspace
-		if err := editor.RuneDelete(); err != nil {
-			return err
-		}
+		editor.RuneDelete()
 	default:
-		if err := editor.RuneInsert(keyPress); err != nil {
-			return err
-		}
+		editor.RuneInsert(keyPress)
 	}
 
 	return nil
@@ -79,25 +75,42 @@ func main() {
 	}
 
 	flag.Parse()
-	editor := NewEditor(NewFile(flag.Arg(0)))
+	file := NewFile(flag.Arg(0))
+	consoleCommands := console.NewCommands()
+	fileCursor := NewFileCursor(file, consoleCommands)
+	editorMode := NewEditorMode()
 
+	windowRows, windowColumns, err := consoleWindow.Size()
+	if err != nil {
+		SafeExit(err)
+	}
+	statusline := NewStatusline(file, fileCursor, editorMode, consoleCommands, windowRows, windowColumns)
+	editor := NewEditor(file, fileCursor, editorMode, statusline, consoleCommands, windowRows-statusline.GetRowsHeight(), windowColumns)
 	if err := editor.FileLoad(); err != nil {
 		SafeExit(err)
 	}
-	if err := editor.ScreenRender(); err != nil {
-		SafeExit(err)
-	}
+	editor.ScreenRender()
 
 	for {
+		windowRows, windowColumns, err := consoleWindow.Size()
+		if err != nil {
+			SafeExit(err)
+		}
+		statusline.SetRowsPosition(windowRows)
+		statusline.SetColumnsWidth(windowColumns)
+
+		editor.SetRowsHeight(windowRows - statusline.GetRowsHeight())
+		editor.SetColumnsWidth(windowColumns)
+
 		// key press
 		keyPress, err := KeyPress()
 		if err != nil {
 			SafeExit(err)
 		}
 
-		if editor.IsModeView() {
+		if editorMode.IsView() {
 			modeView(editor, keyPress)
-		} else if editor.IsModeEdit() {
+		} else if editorMode.IsEdit() {
 			if err := modeEdit(editor, keyPress); err != nil {
 				SafeExit(err)
 			}

@@ -19,6 +19,10 @@ func NewFile(name string) *File {
 	}
 }
 
+func (self *File) ColumnEnd(row int) int {
+	return len(self.rows[row-1])
+}
+
 func (self *File) Load() error {
 	if self.NoFile() {
 		return nil
