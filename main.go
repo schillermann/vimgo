@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"os"
@@ -11,15 +10,6 @@ import (
 
 var consoleWindow = console.Window{}
 var consoleCommands = console.NewCommands()
-
-func KeyPress() (rune, error) {
-	input := bufio.NewReader(os.Stdin)
-	char, _, err := input.ReadRune()
-	if err != nil {
-		return 0, fmt.Errorf("error reading key press: %w", err)
-	}
-	return char, nil
-}
 
 func SafeExit(withErr error) {
 	consoleCommands.Reset()
@@ -35,21 +25,30 @@ func SafeExit(withErr error) {
 	os.Exit(0)
 }
 
-func modeEdit(editor *Editor, keyPress rune) error {
-	switch keyPress {
-	case 27: // ESC key
-		editor.ModeToView()
-	case 127: // Backspace
-		editor.RuneDelete()
-	default:
-		editor.RuneInsert(keyPress)
+func modeEdit(keyboard *console.Keyboard, editor *Editor) {
+	if keyboard.IsRune() {
+		editor.RuneInsert(keyboard.GetRune())
+		return
 	}
-
-	return nil
+	if keyboard.IsKeyDelete() {
+		editor.RuneDeleteRight()
+		return
+	}
+	if keyboard.IsKeyEsc() {
+		editor.ModeToView()
+		return
+	}
+	if keyboard.IsKeyBackspace() {
+		editor.RuneDeleteLeft()
+	}
 }
 
-func modeView(editor *Editor, keyPress rune) {
-	switch keyPress {
+func modeView(keyboard *console.Keyboard, editor *Editor) {
+	if !keyboard.IsRune() {
+		return
+	}
+
+	switch keyboard.GetRune() {
 	case 'h':
 		editor.CursorMoveLeft(1)
 	case 'j':
@@ -74,16 +73,18 @@ func main() {
 		SafeExit(nil)
 	}
 
+	windowRows, windowColumns, err := consoleWindow.Size()
+	if err != nil {
+		SafeExit(err)
+	}
+
 	flag.Parse()
 	file := NewFile(flag.Arg(0))
 	consoleCommands := console.NewCommands()
 	fileCursor := NewFileCursor(file, consoleCommands)
 	editorMode := NewEditorMode()
+	keyboard := console.NewKeyboard()
 
-	windowRows, windowColumns, err := consoleWindow.Size()
-	if err != nil {
-		SafeExit(err)
-	}
 	statusline := NewStatusline(file, fileCursor, editorMode, consoleCommands, windowRows, windowColumns)
 	editor := NewEditor(file, fileCursor, editorMode, statusline, consoleCommands, windowRows-statusline.GetRowsHeight(), windowColumns)
 	if err := editor.FileLoad(); err != nil {
@@ -102,18 +103,11 @@ func main() {
 		editor.SetRowsHeight(windowRows - statusline.GetRowsHeight())
 		editor.SetColumnsWidth(windowColumns)
 
-		// key press
-		keyPress, err := KeyPress()
-		if err != nil {
-			SafeExit(err)
-		}
-
+		keyboard.Read()
 		if editorMode.IsView() {
-			modeView(editor, keyPress)
+			modeView(keyboard, editor)
 		} else if editorMode.IsEdit() {
-			if err := modeEdit(editor, keyPress); err != nil {
-				SafeExit(err)
-			}
+			modeEdit(keyboard, editor)
 		}
 	}
 }

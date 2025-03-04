@@ -103,9 +103,15 @@ func (self *Editor) RowRenderSpaces(row int, columnStart int, columnEnd int) {
 	}
 }
 
-func (self *Editor) RuneDelete() {
+func (self *Editor) RuneDeleteLeft() {
 	self.file.RuneDelete(self.fileCursor.GetRow(), self.fileCursor.GetColumn())
 	self.fileCursor.MoveLeft(1)
+	self.RowRender(self.fileCursor.GetRow())
+	self.statusline.Render()
+}
+
+func (self *Editor) RuneDeleteRight() {
+	self.file.RuneDelete(self.fileCursor.GetRow(), self.fileCursor.GetColumn()+1)
 	self.RowRender(self.fileCursor.GetRow())
 	self.statusline.Render()
 }
