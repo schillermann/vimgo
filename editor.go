@@ -38,6 +38,26 @@ func NewEditor(
 	}
 }
 
+func (self *Editor) CursorMoveLeft() {
+	self.fileCursor.MoveLeft(1)
+	self.statusline.Render()
+}
+
+func (self *Editor) CursorMoveDown() {
+	self.fileCursor.MoveDown(1)
+	self.statusline.Render()
+}
+
+func (self *Editor) CursorMoveUp() {
+	self.fileCursor.MoveUp(1)
+	self.statusline.Render()
+}
+
+func (self *Editor) CursorMoveRight() {
+	self.fileCursor.MoveRight(1)
+	self.statusline.Render()
+}
+
 func (self *Editor) FileLoad() error {
 	if err := self.file.Load(); err != nil {
 		return err
@@ -53,24 +73,17 @@ func (self *Editor) FileSave() error {
 	return err
 }
 
-func (self *Editor) CursorMoveLeft(jump int) {
-	self.fileCursor.MoveLeft(jump)
+func (self *Editor) LineAddAbove() {
+	self.file.RowAdd(self.fileCursor.GetRow() - 1)
 	self.statusline.Render()
+	self.ScreenRender()
 }
 
-func (self *Editor) CursorMoveDown(jump int) {
-	self.fileCursor.MoveDown(jump)
+func (self *Editor) LineAddBelow() {
+	self.file.RowAdd(self.fileCursor.GetRow())
+	self.fileCursor.MoveDown(1)
 	self.statusline.Render()
-}
-
-func (self *Editor) CursorMoveUp(jump int) {
-	self.fileCursor.MoveUp(jump)
-	self.statusline.Render()
-}
-
-func (self *Editor) CursorMoveRight(jump int) {
-	self.fileCursor.MoveRight(jump)
-	self.statusline.Render()
+	self.ScreenRender()
 }
 
 func (self *Editor) ModeToEdit() {
@@ -135,7 +148,7 @@ func (self *Editor) ScreenRender() {
 
 		self.RowRender(row)
 	}
-	self.consoleCommands.CursorMoveTopLeft()
+	self.consoleCommands.CursorMoveTo(self.fileCursor.GetRow(), self.fileCursor.GetColumn())
 }
 
 func (self *Editor) SetColumnsWidth(columns int) {

@@ -50,14 +50,20 @@ func modeView(keyboard *console.Keyboard, editor *Editor) {
 
 	switch keyboard.GetRune() {
 	case 'h':
-		editor.CursorMoveLeft(1)
+		editor.CursorMoveLeft()
 	case 'j':
-		editor.CursorMoveDown(1)
+		editor.CursorMoveDown()
 	case 'k':
-		editor.CursorMoveUp(1)
+		editor.CursorMoveUp()
 	case 'l':
-		editor.CursorMoveRight(1)
+		editor.CursorMoveRight()
 	case 'e':
+		editor.ModeToEdit()
+	case 'o':
+		editor.LineAddBelow()
+		editor.ModeToEdit()
+	case 'O':
+		editor.LineAddAbove()
 		editor.ModeToEdit()
 	case 's':
 		if err := editor.FileSave(); err != nil {
