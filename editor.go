@@ -5,15 +5,16 @@ import (
 )
 
 type Editor struct {
-	file               *File
-	fileCursor         *FileCursor
-	editorMode         *EditorMode
-	statusline         *Statusline
-	consoleCommands    *console.Commands
-	screenCursorRow    int
-	screenCursorColumn int
-	columnsWidth       int
-	rowsHeight         int
+	file            *File
+	fileCursor      *FileCursor
+	editorMode      *EditorMode
+	statusline      *Statusline
+	consoleCommands *console.Commands
+	offsetColumn    int
+	offsetRow       int
+	columnCount     int
+	rowCount        int
+	scrollOff       int
 }
 
 func NewEditor(
@@ -22,47 +23,109 @@ func NewEditor(
 	editorMode *EditorMode,
 	statusline *Statusline,
 	consoleCommands *console.Commands,
-	rowsHeight int,
-	columnsWidth int,
+	rowCount int,
+	columnCount int,
 ) *Editor {
 	return &Editor{
-		file:               file,
-		fileCursor:         fileCursor,
-		editorMode:         editorMode,
-		statusline:         statusline,
-		consoleCommands:    consoleCommands,
-		screenCursorRow:    1,
-		screenCursorColumn: 1,
-		columnsWidth:       columnsWidth,
-		rowsHeight:         rowsHeight,
+		file:            file,
+		fileCursor:      fileCursor,
+		editorMode:      editorMode,
+		statusline:      statusline,
+		consoleCommands: consoleCommands,
+		rowCount:        rowCount,
+		columnCount:     columnCount,
+		scrollOff:       5,
 	}
 }
 
-func (self *Editor) CursorMoveLeft() {
-	self.fileCursor.MoveLeft(1)
+func (self *Editor) ColumnNumberGet() int {
+	return self.fileCursor.ColumnNumberGet() - self.offsetColumn
+}
+
+func (self *Editor) CursorJumpLeft(jump int) {
+	self.fileCursor.JumpLeft(jump)
+
+	currentColumnNumber := self.fileCursor.ColumnNumberGet() - self.offsetColumn
+	isOffset := self.columnCount < self.file.ColumnEnd(self.fileCursor.RowNumberGet())
+	isCrossScrollOff := currentColumnNumber <= self.scrollOff
+	isScroll := self.offsetColumn > 0
+	if isOffset &&
+		isCrossScrollOff &&
+		isScroll {
+		self.offsetColumn--
+		self.Render()
+	}
+
+	self.CursorSync()
 	self.statusline.Render()
 }
 
-func (self *Editor) CursorMoveDown() {
-	self.fileCursor.MoveDown(1)
+func (self *Editor) CursorJumpDown(jump int) {
+	self.fileCursor.JumpDown(jump)
+
+	currentRowNumber := self.fileCursor.RowNumberGet() - self.offsetRow
+	isOffset := self.rowCount < self.file.RowCount()
+	isCrossScrollOff := currentRowNumber >= self.rowCount-self.scrollOff
+	isScroll := self.rowCount+self.offsetRow < self.file.RowCount()
+	if isOffset &&
+		isCrossScrollOff &&
+		isScroll {
+		self.offsetRow++
+		self.Render()
+	}
+
+	self.CursorSync()
 	self.statusline.Render()
 }
 
-func (self *Editor) CursorMoveUp() {
-	self.fileCursor.MoveUp(1)
+func (self *Editor) CursorJumpUp(jump int) {
+	self.fileCursor.JumpUp(jump)
+
+	currentRowNumber := self.fileCursor.RowNumberGet() - self.offsetRow
+	isOffset := self.rowCount < self.file.RowCount()
+	isCrossScrollOff := currentRowNumber <= self.scrollOff
+	isScroll := self.offsetRow > 0
+	if isOffset &&
+		isCrossScrollOff &&
+		isScroll {
+		self.offsetRow--
+		self.Render()
+	}
+
+	self.CursorSync()
 	self.statusline.Render()
 }
 
-func (self *Editor) CursorMoveRight() {
-	self.fileCursor.MoveRight(1)
+func (self *Editor) CursorJumpRight(jump int) {
+	self.fileCursor.JumpRight(jump)
+
+	currentColumnNumber := self.fileCursor.ColumnNumberGet() - self.offsetColumn
+	isOffset := self.columnCount < self.file.ColumnEnd(self.fileCursor.RowNumberGet())
+	isCrossScrollOff := currentColumnNumber >= self.columnCount-self.scrollOff
+	isScroll := self.columnCount+self.offsetColumn <= self.file.ColumnEnd(self.fileCursor.RowNumberGet())
+	if isOffset &&
+		isCrossScrollOff &&
+		isScroll {
+		self.offsetColumn++
+		self.Render()
+	}
+
+	self.CursorSync()
 	self.statusline.Render()
+}
+
+func (self *Editor) CursorSync() {
+	self.consoleCommands.CursorSet(
+		self.fileCursor.RowNumberGet()-self.offsetRow,
+		self.fileCursor.ColumnNumberGet()-self.offsetColumn,
+	)
 }
 
 func (self *Editor) FileLoad() error {
 	if err := self.file.Load(); err != nil {
 		return err
 	}
-	self.consoleCommands.CursorMoveTopLeft()
+	self.consoleCommands.CursorSetTopLeft()
 	self.TitleSet(self.file.Name())
 	return nil
 }
@@ -73,17 +136,25 @@ func (self *Editor) FileSave() error {
 	return err
 }
 
+func (self *Editor) HeightSet(rowCount int) {
+	if self.rowCount == rowCount {
+		return
+	}
+	self.rowCount = rowCount
+	self.Render()
+}
+
 func (self *Editor) LineAddAbove() {
-	self.file.RowAdd(self.fileCursor.GetRow() - 1)
+	self.file.RowAdd(self.fileCursor.RowNumberGet() - 1)
 	self.statusline.Render()
-	self.ScreenRender()
+	self.Render()
 }
 
 func (self *Editor) LineAddBelow() {
-	self.file.RowAdd(self.fileCursor.GetRow())
-	self.fileCursor.MoveDown(1)
+	self.file.RowAdd(self.fileCursor.RowNumberGet())
+	self.fileCursor.JumpDown(1)
 	self.statusline.Render()
-	self.ScreenRender()
+	self.Render()
 }
 
 func (self *Editor) ModeToEdit() {
@@ -96,77 +167,79 @@ func (self *Editor) ModeToView() {
 	self.statusline.Render()
 }
 
-func (self *Editor) RowRender(row int) {
+func (self *Editor) RowNumberGet() int {
+	return self.fileCursor.RowNumberGet() - self.offsetRow
+}
+
+func (self *Editor) RowRender(rowNumber int) {
 	self.consoleCommands.CursorHide()
-	for columnIndex, char := range self.file.Rows()[row-1] {
-		if columnIndex >= self.columnsWidth {
-			self.consoleCommands.CursorShow()
+
+	fileColumn := self.offsetColumn
+	fileRowIndex := rowNumber + self.offsetRow - 1
+	row := self.file.Rows()[fileRowIndex]
+	columnEnd := len(row)
+	columnNumber := 1
+
+	for ; columnNumber <= self.columnCount; columnNumber++ {
+		fileColumn++
+		if fileColumn <= columnEnd {
+			self.consoleCommands.RunePrint(rowNumber, columnNumber, row[fileColumn-1])
+			continue
 		}
-		self.consoleCommands.RunePrint(row, columnIndex+1, char)
+		if fileColumn == columnEnd+1 {
+			self.consoleCommands.RunePrint(rowNumber, columnNumber, '↲')
+			continue
+		}
+		self.consoleCommands.RunePrint(rowNumber, columnNumber, ' ')
 	}
-	columnEnd := len(self.file.Rows()[row-1])
-	self.consoleCommands.RunePrint(row, columnEnd+1, '↲')
-	self.RowRenderSpaces(row, columnEnd+2, self.columnsWidth)
 	self.consoleCommands.CursorShow()
 }
 
-func (self *Editor) RowRenderSpaces(row int, columnStart int, columnEnd int) {
-	for column := columnStart; column <= columnEnd; column++ {
-		self.consoleCommands.RunePrint(row, column, ' ')
-	}
-}
-
 func (self *Editor) RuneDeleteLeft() {
-	self.file.RuneDelete(self.fileCursor.GetRow(), self.fileCursor.GetColumn())
-	self.fileCursor.MoveLeft(1)
-	self.RowRender(self.fileCursor.GetRow())
+	self.file.RuneDelete(self.fileCursor.RowNumberGet(), self.fileCursor.ColumnNumberGet())
+	self.fileCursor.JumpLeft(1)
+
+	self.RowRender(self.RowNumberGet())
 	self.statusline.Render()
 }
 
 func (self *Editor) RuneDeleteRight() {
-	self.file.RuneDelete(self.fileCursor.GetRow(), self.fileCursor.GetColumn()+1)
-	self.RowRender(self.fileCursor.GetRow())
+	self.file.RuneDelete(self.fileCursor.RowNumberGet(), self.fileCursor.ColumnNumberGet()+1)
+
+	self.RowRender(self.RowNumberGet())
 	self.statusline.Render()
 }
 
 func (self *Editor) RuneInsert(char rune) {
-	self.file.RuneInsert(self.fileCursor.GetRow(), self.fileCursor.GetColumn(), char)
-	self.fileCursor.MoveRight(1)
-	self.RowRender(self.fileCursor.GetRow())
+	self.file.RuneInsert(self.fileCursor.RowNumberGet(), self.fileCursor.ColumnNumberGet(), char)
+	self.fileCursor.JumpRight(1)
+
+	self.RowRender(self.RowNumberGet())
 	self.statusline.Render()
 }
 
-func (self *Editor) ScreenRender() {
+func (self *Editor) Render() {
+	self.consoleCommands.CursorPositionSave()
+	rowNumber := 1
+
+	for ; rowNumber <= self.rowCount && rowNumber <= self.file.RowCount(); rowNumber++ {
+		self.RowRender(rowNumber)
+	}
+	for ; rowNumber <= self.rowCount; rowNumber++ {
+		self.consoleCommands.RunePrint(rowNumber, 1, '~')
+	}
+	self.consoleCommands.CursorPositionRestore()
 	self.statusline.Render()
-
-	for row := 1; row <= self.rowsHeight; row++ {
-		if row > len(self.file.Rows()) {
-			self.consoleCommands.RunePrint(row, 1, '~')
-			self.RowRenderSpaces(row, 2, self.columnsWidth)
-			continue
-		}
-
-		self.RowRender(row)
-	}
-	self.consoleCommands.CursorMoveTo(self.fileCursor.GetRow(), self.fileCursor.GetColumn())
-}
-
-func (self *Editor) SetColumnsWidth(columns int) {
-	if self.columnsWidth == columns {
-		return
-	}
-	self.columnsWidth = columns
-	self.ScreenRender()
-}
-
-func (self *Editor) SetRowsHeight(rows int) {
-	if self.rowsHeight == rows {
-		return
-	}
-	self.rowsHeight = rows
-	self.ScreenRender()
 }
 
 func (self *Editor) TitleSet(title string) {
 	self.consoleCommands.TitleSet("VimGo - " + title)
+}
+
+func (self *Editor) WidthSet(columnCount int) {
+	if self.columnCount == columnCount {
+		return
+	}
+	self.columnCount = columnCount
+	self.Render()
 }

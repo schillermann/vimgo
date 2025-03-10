@@ -27,7 +27,7 @@ func SafeExit(withErr error) {
 
 func modeEdit(keyboard *console.Keyboard, editor *Editor) {
 	if keyboard.IsRune() {
-		editor.RuneInsert(keyboard.GetRune())
+		editor.RuneInsert(keyboard.RuneGet())
 		return
 	}
 	if keyboard.IsKeyDelete() {
@@ -48,15 +48,15 @@ func modeView(keyboard *console.Keyboard, editor *Editor) {
 		return
 	}
 
-	switch keyboard.GetRune() {
+	switch keyboard.RuneGet() {
 	case 'h':
-		editor.CursorMoveLeft()
+		editor.CursorJumpLeft(1)
 	case 'j':
-		editor.CursorMoveDown()
+		editor.CursorJumpDown(1)
 	case 'k':
-		editor.CursorMoveUp()
+		editor.CursorJumpUp(1)
 	case 'l':
-		editor.CursorMoveRight()
+		editor.CursorJumpRight(1)
 	case 'e':
 		editor.ModeToEdit()
 	case 'o':
@@ -92,22 +92,22 @@ func main() {
 	keyboard := console.NewKeyboard()
 
 	statusline := NewStatusline(file, fileCursor, editorMode, consoleCommands, windowRows, windowColumns)
-	editor := NewEditor(file, fileCursor, editorMode, statusline, consoleCommands, windowRows-statusline.GetRowsHeight(), windowColumns)
+	editor := NewEditor(file, fileCursor, editorMode, statusline, consoleCommands, windowRows-statusline.RowCountGet(), windowColumns)
 	if err := editor.FileLoad(); err != nil {
 		SafeExit(err)
 	}
-	editor.ScreenRender()
+	editor.Render()
 
 	for {
 		windowRows, windowColumns, err := consoleWindow.Size()
 		if err != nil {
 			SafeExit(err)
 		}
-		statusline.SetRowsPosition(windowRows)
-		statusline.SetColumnsWidth(windowColumns)
+		statusline.PositionSet(windowRows)
+		statusline.WidthSet(windowColumns)
 
-		editor.SetRowsHeight(windowRows - statusline.GetRowsHeight())
-		editor.SetColumnsWidth(windowColumns)
+		editor.HeightSet(windowRows - statusline.RowCountGet())
+		editor.WidthSet(windowColumns)
 
 		keyboard.Read()
 		if editorMode.IsView() {

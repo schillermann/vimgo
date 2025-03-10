@@ -62,13 +62,13 @@ func (self *File) NoFile() bool {
 	return false
 }
 
-func (self *File) NumberOfRows() int {
-	return len(self.rows)
-}
-
 func (self *File) RowAdd(row int) {
 	self.rows = append(self.rows[:row], append([][]rune{{}}, self.rows[row:]...)...)
 	self.modified = true
+}
+
+func (self *File) RowCount() int {
+	return len(self.rows)
 }
 
 func (self *File) Rows() [][]rune {

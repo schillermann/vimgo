@@ -26,11 +26,6 @@ func NewKeyboard() *Keyboard {
 	return &Keyboard{}
 }
 
-func (self *Keyboard) GetRune() rune {
-	r, _ := utf8.DecodeRune(self.buffer)
-	return r
-}
-
 func (self *Keyboard) IsKeyBackspace() bool {
 	return bytes.Equal(self.buffer[0:self.bufferSize], keyBackspace)
 }
@@ -44,7 +39,7 @@ func (self *Keyboard) IsKeyEsc() bool {
 }
 
 func (self *Keyboard) IsRune() bool {
-	return unicode.IsPrint(self.GetRune())
+	return unicode.IsPrint(self.RuneGet())
 }
 
 func (self *Keyboard) Read() error {
@@ -56,4 +51,9 @@ func (self *Keyboard) Read() error {
 	}
 	self.bufferSize = size
 	return nil
+}
+
+func (self *Keyboard) RuneGet() rune {
+	r, _ := utf8.DecodeRune(self.buffer)
+	return r
 }

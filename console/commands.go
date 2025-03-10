@@ -13,13 +13,19 @@ const (
 )
 
 type Commands struct {
-	writer io.Writer
+	writer io.ReadWriter
 }
 
 func NewCommands() *Commands {
 	return &Commands{
 		writer: os.Stdout,
 	}
+}
+
+func (self *Commands) CursorGet() (rowNumber int, columnNumber int) {
+	fmt.Fprint(self.writer, csi+"6n")
+	fmt.Fscanf(self.writer, csi+"%d;%dR", &rowNumber, &columnNumber)
+	return rowNumber, columnNumber
 }
 
 func (self *Commands) ColorInverse() {
@@ -30,28 +36,36 @@ func (self *Commands) CursorHide() {
 	fmt.Fprint(self.writer, csi+"?25l")
 }
 
-func (self *Commands) CursorMoveDown(jump int) {
+func (self *Commands) CursorJumpDown(jump int) {
 	fmt.Fprintf(self.writer, csi+"%dB", jump)
 }
 
-func (self *Commands) CursorMoveLeft(jump int) {
+func (self *Commands) CursorJumpLeft(jump int) {
 	fmt.Fprintf(self.writer, csi+"%dD", jump)
 }
 
-func (self *Commands) CursorMoveRight(jump int) {
+func (self *Commands) CursorJumpRight(jump int) {
 	fmt.Fprintf(self.writer, csi+"%dC", jump)
 }
 
-func (self *Commands) CursorMoveTo(row int, column int) {
+func (self *Commands) CursorJumpUp(jump int) {
+	fmt.Fprintf(self.writer, csi+"%dA", jump)
+}
+
+func (self *Commands) CursorPositionRestore() {
+	fmt.Fprint(self.writer, escape+"8")
+}
+
+func (self *Commands) CursorPositionSave() {
+	fmt.Fprint(self.writer, escape+"7")
+}
+
+func (self *Commands) CursorSet(row int, column int) {
 	fmt.Fprintf(self.writer, csi+"%d;%dH", row, column)
 }
 
-func (self *Commands) CursorMoveTopLeft() {
+func (self *Commands) CursorSetTopLeft() {
 	fmt.Fprint(self.writer, csi+"H")
-}
-
-func (self *Commands) CursorMoveUp(jump int) {
-	fmt.Fprintf(self.writer, csi+"%dA", jump)
 }
 
 func (self *Commands) CursorShow() {
